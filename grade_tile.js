@@ -116,9 +116,6 @@ looker.plugins.visualizations.add({
 
   // Set up the initial state of the visualization
   create: function(element, config) {
-    // Apply defaults immediately during creation
-    // config = this._applyDefaults(config || {});
-    
     element.innerHTML = `
       <style>
         .grade-tile-container {
@@ -212,9 +209,6 @@ looker.plugins.visualizations.add({
   updateAsync: function(data, element, config, queryResponse, details, doneRendering) {
     this.clearErrors();
 
-    // Apply default settings if not provided
-    // config = this._applyDefaults(config || {});
-
     if (queryResponse.fields.measures.length < 1) {
       this.addError({title: "Insufficient Data", message: "This visualization requires at least one measure."});
       return;
@@ -266,43 +260,9 @@ looker.plugins.visualizations.add({
     doneRendering();
   },
 
-  // Apply default settings if not provided
-  _applyDefaults: function(config) {
-    config = config || {};
-    const defaults = {
-      title_text: "",
-      subtitle_text: "",
-      title_color: "#282828",
-      subtitle_color: "#808080",
-      show_numeric_value: true,
-      font_size_grade: 36,
-      font_size_title: 16,
-      ring_size: 120,
-      ring_thickness: 4,
-      a_color: "#00AA00",
-      b_color: "#88AA00",
-      c_color: "#AAAA00",
-      d_color: "#AA5500",
-      f_color: "#AA0000"
-    };
-
-    // For each property in defaults, use it if the config value is undefined, null or empty string for color fields
-    Object.keys(defaults).forEach(key => {
-      if (config[key] === undefined || config[key] === null || 
-          (key.includes('color') && config[key] === "")) {
-        config[key] = defaults[key];
-      }
-    });
-
-    return config;
-  },
-
   // Helper function to determine grade letter and color
   getGradeInfo: function(value, config) {
     let gradeLetter, gradeColor;
-
-    // Ensure config values exist
-    // config = this._applyDefaults(config);
 
     // Determine the base grade (A, B, C, D, F)
     if (value >= 90) {
