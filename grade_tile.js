@@ -213,7 +213,7 @@ looker.plugins.visualizations.add({
     this.clearErrors();
 
     // Apply default settings if not provided
-    config = this._applyDefaults(config || {});
+    // config = this._applyDefaults(config || {});
 
     if (queryResponse.fields.measures.length < 1) {
       this.addError({title: "Insufficient Data", message: "This visualization requires at least one measure."});
@@ -302,7 +302,7 @@ looker.plugins.visualizations.add({
     let gradeLetter, gradeColor;
 
     // Ensure config values exist
-    config = this._applyDefaults(config);
+    // config = this._applyDefaults(config);
 
     // Determine the base grade (A, B, C, D, F)
     if (value >= 90) {
