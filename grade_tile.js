@@ -22,7 +22,7 @@ looker.plugins.visualizations.add({
       order: 3,
       type: "boolean",
       label: "Show Numeric Value",
-      default: false
+      default: true
     },
     
     // Appearance Section
@@ -56,23 +56,19 @@ looker.plugins.visualizations.add({
       display: "color",
       default: "#808080"
     },
-    circle_size: {
+    ring_size: {
       section: "Appearance",
       order: 5,
       type: "number",
-      label: "Circle Size (px)",
+      label: "Ring Size (px)",
       default: 120
     },
-    circle_opacity: {
+    ring_thickness: {
       section: "Appearance",
       order: 6,
       type: "number",
-      label: "Circle Opacity",
-      display: "range",
-      min: 0.1,
-      max: 1.0,
-      step: 0.1,
-      default: 0.2
+      label: "Ring Thickness (px)",
+      default: 4
     },
     
     // Grade Colors Section
@@ -120,6 +116,9 @@ looker.plugins.visualizations.add({
 
   // Set up the initial state of the visualization
   create: function(element, config) {
+    // Apply defaults immediately during creation
+    config = this._applyDefaults(config || {});
+    
     element.innerHTML = `
       <style>
         .grade-tile-container {
@@ -139,6 +138,8 @@ looker.plugins.visualizations.add({
           font-weight: bold;
           margin-bottom: 5px;
           z-index: 2;
+          color: ${config.title_color};
+          font-size: ${config.font_size_title}px;
         }
         .grade-display {
           position: relative;
@@ -147,21 +148,28 @@ looker.plugins.visualizations.add({
           align-items: center;
           z-index: 2;
         }
-        .grade-circle {
+        .grade-ring {
           position: absolute;
           border-radius: 50%;
+          border-style: solid;
           transform: translate(-50%, -50%);
           left: 50%;
           top: 50%;
           z-index: 1;
+          background-color: transparent;
+          width: ${config.ring_size}px;
+          height: ${config.ring_size}px;
+          border-width: ${config.ring_thickness}px;
         }
         .grade-letter {
           font-weight: bold;
           z-index: 2;
+          font-size: ${config.font_size_grade}px;
         }
         .grade-subtitle {
           margin-top: 10px;
           z-index: 2;
+          color: ${config.subtitle_color};
         }
       </style>
     `;
@@ -170,9 +178,9 @@ looker.plugins.visualizations.add({
     this._container = element.appendChild(document.createElement("div"));
     this._container.className = "grade-tile-container";
     
-    // Create the circle background
-    this._circleElement = this._container.appendChild(document.createElement("div"));
-    this._circleElement.className = "grade-circle";
+    // Create the ring
+    this._ringElement = this._container.appendChild(document.createElement("div"));
+    this._ringElement.className = "grade-ring";
 
     this._titleElement = this._container.appendChild(document.createElement("div"));
     this._titleElement.className = "grade-title";
@@ -185,6 +193,19 @@ looker.plugins.visualizations.add({
 
     this._subtitleElement = this._container.appendChild(document.createElement("div"));
     this._subtitleElement.className = "grade-subtitle";
+    
+    // Set initial values with defaults
+    this._titleElement.innerText = config.title_text || "";
+    this._titleElement.style.display = config.title_text && config.title_text.trim() !== "" ? "block" : "none";
+    
+    this._subtitleElement.innerText = config.subtitle_text || "";
+    this._subtitleElement.style.display = config.subtitle_text && config.subtitle_text.trim() !== "" ? "block" : "none";
+    
+    // Set default colors for ring and grade letter
+    // We'll use the "F" color as default initially before data is loaded
+    const defaultColor = config.f_color;
+    this._ringElement.style.borderColor = defaultColor;
+    this._gradeLetter.style.color = defaultColor;
   },
 
   // Render in response to data or settings changes
@@ -192,7 +213,7 @@ looker.plugins.visualizations.add({
     this.clearErrors();
 
     // Apply default settings if not provided
-    config = this._applyDefaults(config);
+    config = this._applyDefaults(config || {});
 
     if (queryResponse.fields.measures.length < 1) {
       this.addError({title: "Insufficient Data", message: "This visualization requires at least one measure."});
@@ -201,18 +222,19 @@ looker.plugins.visualizations.add({
 
     // Get the measure value
     const measureName = queryResponse.fields.measures[0].name;
-    const numericValue = data[0][measureName].value || 0;  // Default to 0 if value is null or undefined
+    const numericValue = data && data[0] && data[0][measureName] ? data[0][measureName].value || 0 : 0;  // More robust null checking
 
     // Determine the grade based on the numeric value
     const gradeInfo = this.getGradeInfo(numericValue, config);
     const { gradeLetter, gradeColor } = gradeInfo;
     
-    // Update the circle element
-    const circleSize = config.circle_size || 120;
-    this._circleElement.style.width = `${circleSize}px`;
-    this._circleElement.style.height = `${circleSize}px`;
-    this._circleElement.style.backgroundColor = gradeColor;
-    this._circleElement.style.opacity = config.circle_opacity || 0.2;
+    // Update the ring element
+    const ringSize = config.ring_size;
+    const ringThickness = config.ring_thickness;
+    this._ringElement.style.width = `${ringSize}px`;
+    this._ringElement.style.height = `${ringSize}px`;
+    this._ringElement.style.borderColor = gradeColor;
+    this._ringElement.style.borderWidth = `${ringThickness}px`;
 
     // Update the title element (only show if title text is provided)
     if (config.title_text && config.title_text.trim() !== "") {
@@ -246,6 +268,7 @@ looker.plugins.visualizations.add({
 
   // Apply default settings if not provided
   _applyDefaults: function(config) {
+    config = config || {};
     const defaults = {
       title_text: "",
       subtitle_text: "",
@@ -254,8 +277,8 @@ looker.plugins.visualizations.add({
       show_numeric_value: true,
       font_size_grade: 36,
       font_size_title: 16,
-      circle_size: 120,
-      circle_opacity: 0.2,
+      ring_size: 120,
+      ring_thickness: 4,
       a_color: "#00AA00",
       b_color: "#88AA00",
       c_color: "#AAAA00",
@@ -263,9 +286,10 @@ looker.plugins.visualizations.add({
       f_color: "#AA0000"
     };
 
-    // For each property in defaults, use it if the config value is undefined
+    // For each property in defaults, use it if the config value is undefined, null or empty string for color fields
     Object.keys(defaults).forEach(key => {
-      if (config[key] === undefined) {
+      if (config[key] === undefined || config[key] === null || 
+          (key.includes('color') && config[key] === "")) {
         config[key] = defaults[key];
       }
     });
@@ -276,6 +300,9 @@ looker.plugins.visualizations.add({
   // Helper function to determine grade letter and color
   getGradeInfo: function(value, config) {
     let gradeLetter, gradeColor;
+
+    // Ensure config values exist
+    config = this._applyDefaults(config);
 
     // Determine the base grade (A, B, C, D, F)
     if (value >= 90) {
