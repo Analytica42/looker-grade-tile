@@ -257,6 +257,7 @@ looker.plugins.visualizations.add({
     }
     this._subtitleElement.style.color = config.subtitle_color;
 
+    console.debug("Entering doneRendering state...")
     doneRendering();
   },
 
