@@ -117,7 +117,7 @@ looker.plugins.visualizations.add({
   // Set up the initial state of the visualization
   create: function(element, config) {
     // Apply defaults immediately during creation
-    config = this._applyDefaults(config || {});
+    // config = this._applyDefaults(config || {});
     
     element.innerHTML = `
       <style>
